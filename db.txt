@@ -1,7 +1,0 @@
-Username: daniyal2472_db_user
-Password: Nc1mhy0mORO9RTLY
-Connection String: mongodb+srv://daniyal2472_db_user:Nc1mhy0mORO9RTLY@cluster-edupredict.wggn6ki.mongodb.net/?appName=Cluster-EduPredict
-
-DEMO USER:
-Username: admin_demo
-Password: password123

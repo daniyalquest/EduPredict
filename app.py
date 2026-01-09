@@ -209,11 +209,58 @@ def show_prediction():
 # ===============================
 def show_db_explorer():
     st.title("📂 Database Explorer")
-    df = pd.DataFrame(list(records_col.find({}, {"_id": 0})))
-    if df.empty:
+
+    # Fetch data and exclude the MongoDB '_id' field
+    raw_data = list(records_col.find({}, {"_id": 0}))
+    
+    if not raw_data:
         st.warning("Database is empty.")
         return
-    st.dataframe(df, use_container_width=True)
+
+    df = pd.DataFrame(raw_data)
+
+    # ---- Summary Metrics (Mean of all numerical columns) ----
+    st.subheader("📊 Numerical Column Averages")
+    
+    # Select only numeric columns (int and float)
+    num_df = df.select_dtypes(include=[np.number])
+    
+    if not num_df.empty:
+        # Create a grid to display metrics (max 4 per row for readability)
+        num_cols = num_df.columns
+        rows = [num_cols[i:i + 4] for i in range(0, len(num_cols), 4)]
+        
+        for row in rows:
+            cols = st.columns(len(row))
+            for i, col_name in enumerate(row):
+                avg_val = num_df[col_name].mean()
+                display_name = col_name.replace("_", " ").title()
+                cols[i].metric(display_name, f"{avg_val:.2f}")
+    
+    st.divider()
+
+    # ---- Full Data Table ----
+    st.subheader(f"📋 Full Records ({len(df)} entries)")
+    
+    # Search Bar for table filtering
+    search = st.text_input("🔍 Search records by any value", "")
+    if search:
+        # Filter dataframe based on search string
+        mask = df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
+        df_display = df[mask]
+    else:
+        df_display = df
+
+    st.dataframe(df_display, use_container_width=True, height=500)
+
+    # Download Option
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="⬇️ Download Full Data as CSV",
+        data=csv,
+        file_name='edupredict_records.csv',
+        mime='text/csv',
+    )
 
 # ===============================
 # 7. MAIN APP ROUTING

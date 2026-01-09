@@ -35,7 +35,7 @@ EduPredict is an end-to-end data science application designed to analyze student
 
 1. **Clone the repository**:
    ```bash
-   git clone <your-repo-link>
+   git clone https://github.com/daniyalquest/EduPredict.git
    cd EduPredict
    ```
 

@@ -210,7 +210,7 @@ def show_prediction():
 def show_db_explorer():
     st.title("📂 Database Explorer")
 
-    # Fetch data and exclude the MongoDB '_id' field
+    # Fetch data and exclude the MongoDB '_id' (internal ID)
     raw_data = list(records_col.find({}, {"_id": 0}))
     
     if not raw_data:
@@ -219,46 +219,51 @@ def show_db_explorer():
 
     df = pd.DataFrame(raw_data)
 
-    # ---- Summary Metrics (Mean of all numerical columns) ----
+    # ---- Summary Metrics ----
     st.subheader("📊 Numerical Column Averages")
     
-    # Select only numeric columns (int and float)
+    # 1. Select numeric columns
+    # 2. EXCLUDE 'student_id' from averages (it's an identifier, not a score)
+    cols_to_exclude = ['student_id', 'Student Id'] 
     num_df = df.select_dtypes(include=[np.number])
-    
-    if not num_df.empty:
-        # Create a grid to display metrics (max 4 per row for readability)
-        num_cols = num_df.columns
-        rows = [num_cols[i:i + 4] for i in range(0, len(num_cols), 4)]
+    metrics_df = num_df.drop(columns=[c for c in cols_to_exclude if c in num_df.columns])
+
+    if not metrics_df.empty:
+        # Create a grid: 4 metrics per row
+        num_metrics = len(metrics_df.columns)
+        rows = [metrics_df.columns[i:i + 4] for i in range(0, num_metrics, 4)]
         
-        for row in rows:
-            cols = st.columns(len(row))
-            for i, col_name in enumerate(row):
-                avg_val = num_df[col_name].mean()
+        for row_cols in rows:
+            st_cols = st.columns(len(row_cols))
+            for i, col_name in enumerate(row_cols):
+                avg_val = metrics_df[col_name].mean()
                 display_name = col_name.replace("_", " ").title()
-                cols[i].metric(display_name, f"{avg_val:.2f}")
+                # Adding a percentage sign for scores
+                suffix = "%" if "score" in col_name.lower() or "percentage" in col_name.lower() else ""
+                st_cols[i].metric(display_name, f"{avg_val:.2f}{suffix}")
     
     st.divider()
 
     # ---- Full Data Table ----
     st.subheader(f"📋 Full Records ({len(df)} entries)")
     
-    # Search Bar for table filtering
-    search = st.text_input("🔍 Search records by any value", "")
+    # Filter functionality
+    search = st.text_input("🔍 Search records", placeholder="Type to filter table...")
     if search:
-        # Filter dataframe based on search string
         mask = df.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)
         df_display = df[mask]
     else:
         df_display = df
 
-    st.dataframe(df_display, use_container_width=True, height=500)
+    # Display the table (Student ID will still show here)
+    st.dataframe(df_display, use_container_width=True, height=450)
 
-    # Download Option
+    # Export functionality
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="⬇️ Download Full Data as CSV",
+        label="⬇️ Download CSV Export",
         data=csv,
-        file_name='edupredict_records.csv',
+        file_name='edupredict_data.csv',
         mime='text/csv',
     )
 
